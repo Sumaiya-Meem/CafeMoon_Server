@@ -7,13 +7,13 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 const port = process.env.PORT || 5000;
 
-// middleware
+
 app.use(cors());
 app.use(express.json());
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.ojnnavp.mongodb.net/?retryWrites=true&w=majority`;
 
-// Create a MongoClient with a MongoClientOptions object to set the Stable API version
+
 const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
@@ -31,16 +31,15 @@ async function run() {
     const paymentCollection = client.db('CafeMoonDB').collection('payments');
 
 
-    // jwt related api
+
     app.post('/jwt', async (req, res) => {
       const user = req.body;
       const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
       res.send({ token });
     })
 
-    // middlewares 
+
     const verifyToken = (req, res, next) => {
-      // console.log('inside verify token', req.headers.authorization);
       if (!req.headers.authorization) {
         return res.status(401).send({ message: 'unauthorized access' });
       }
@@ -54,7 +53,7 @@ async function run() {
       })
     }
 
-    // use verify admin after verifyToken
+
     const verifyAdmin = async (req, res, next) => {
       const email = req.decoded.email;
       const query = { email: email };
@@ -66,7 +65,7 @@ async function run() {
       next();
     }
 
-    // users related api
+
     app.get('/users', verifyToken, verifyAdmin, async (req, res) => {
       const result = await userCollection.find().toArray();
       res.send(result);
@@ -90,8 +89,6 @@ async function run() {
 
     app.post('/users', async (req, res) => {
       const user = req.body;
-      // insert email if user doesnt exists: 
-      // you can do this many ways (1. email unique, 2. upsert 3. simple checking)
       const query = { email: user.email }
       const existingUser = await userCollection.findOne(query);
       if (existingUser) {
@@ -120,7 +117,7 @@ async function run() {
       res.send(result);
     })
 
-    // menu related apis
+
     app.get('/menu', async (req, res) => {
       const result = await menuCollection.find().toArray();
       res.send(result);
@@ -169,7 +166,7 @@ async function run() {
       res.send(result);
     })
 
-    // carts collection
+
     app.get('/carts', async (req, res) => {
       const email = req.query.email;
       const query = { email: email };
@@ -190,7 +187,7 @@ async function run() {
       res.send(result);
     });
 
-    // payment intent
+
     app.post('/create-payment-intent', async (req, res) => {
       const { price } = req.body;
       const amount = parseInt(price * 100);
@@ -221,7 +218,7 @@ async function run() {
       const payment = req.body;
       const paymentResult = await paymentCollection.insertOne(payment);
 
-      //  carefully delete each item from the cart
+
       console.log('payment info', payment);
       const query = {
         _id: {
@@ -234,15 +231,13 @@ async function run() {
       res.send({ paymentResult, deleteResult });
     })
 
-    // stats or analytics
+
     app.get('/admin-stats', verifyToken, verifyAdmin, async (req, res) => {
       const users = await userCollection.estimatedDocumentCount();
       const menuItems = await menuCollection.estimatedDocumentCount();
       const orders = await paymentCollection.estimatedDocumentCount();
 
-      // this is not the best way
-      // const payments = await paymentCollection.find().toArray();
-      // const revenue = payments.reduce((total, payment) => total + payment.price, 0);
+    
 
       const result = await paymentCollection.aggregate([
         {
@@ -266,17 +261,7 @@ async function run() {
     })
 
 
-    // order status
-    /**
-     * ----------------------------
-     *    NON-Efficient Way
-     * ------------------------------
-     * 1. load all the payments
-     * 2. for every menuItemIds (which is an array), go find the item from menu collection
-     * 3. for every item in the menu collection that you found from a payment entry (document)
-    */
-
-    // using aggregate pipeline
+ 
     app.get('/order-stats', verifyToken, verifyAdmin, async(req, res) =>{
       const result = await paymentCollection.aggregate([
         {
