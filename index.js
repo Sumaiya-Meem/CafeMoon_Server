@@ -24,6 +24,7 @@ async function run() {
     const menuCollection = client.db('CafeMoonDB').collection('menu');
     const reviewsCollection = client.db('CafeMoonDB').collection('reviews');
     const userCollection = client.db('CafeMoonDB').collection('user');
+    const cartCollection = client.db('CafeMoonDB').collection('carts');
     
     app.post('/user', async(req, res) => {
         const userInfo = req.body;
@@ -32,8 +33,15 @@ async function run() {
         if(existingUser){
            return res.send({message: 'user already existing'})
         };
-        const result = await usersCollection.insertOne(userInfo);
+        const result = await userCollection.insertOne(userInfo);
         res.send(result);
+    })
+
+    // Post cart
+    app.post('/carts',async(req,res)=>{
+          const cartItem=req.body;
+          const result = await cartCollectionCollection.insertOne(cartItem);
+          res.send(result);
     })
 
     app.get('/menu', async(req, res) => {
